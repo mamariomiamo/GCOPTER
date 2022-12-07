@@ -718,6 +718,9 @@ namespace gcopter
                     }
                 }
             }
+
+            std::cout << "initial points: \n" << innerPoints << std::endl;
+            std::cout << "initial timeAlloc: " << timeAlloc.transpose() << std::endl;
         }
 
     public:
@@ -809,11 +812,13 @@ namespace gcopter
         inline double optimize(Trajectory<5> &traj,
                                const double &relCostTol)
         {
+            // x.data() returns a pointer points to x
+            // good practice to avoid copying variables
             Eigen::VectorXd x(temporalDim + spatialDim);
             Eigen::Map<Eigen::VectorXd> tau(x.data(), temporalDim);
             Eigen::Map<Eigen::VectorXd> xi(x.data() + temporalDim, spatialDim);
-
-            setInitial(shortPath, allocSpeed, pieceIdx, points, times);
+            std::cout << "shortest path has waypoints: " << shortPath.cols() << std::endl;
+            setInitial(shortPath, allocSpeed, pieceIdx, points, times); // initial guess for points (spatial), times (temporal)
             backwardT(times, tau);
             backwardP(points, vPolyIdx, vPolytopes, xi);
 
