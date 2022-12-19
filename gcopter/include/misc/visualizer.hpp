@@ -5,10 +5,13 @@
 #include "gcopter/quickhull.hpp"
 #include "gcopter/geo_utils.hpp"
 
+#include "corridor_gen/include/corridor_gen.h"
+
 #include <iostream>
 #include <memory>
 #include <chrono>
 #include <cmath>
+#include <random>
 
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
@@ -33,6 +36,8 @@ private:
     ros::Publisher meshPub;
     ros::Publisher edgePub;
     ros::Publisher spherePub;
+    ros::Publisher corridorPub;
+    ros::Publisher initialGuessPub;
 
 public:
     ros::Publisher speedPub;
@@ -54,6 +59,8 @@ public:
         thrPub = nh.advertise<std_msgs::Float64>("/visualizer/total_thrust", 1000);
         tiltPub = nh.advertise<std_msgs::Float64>("/visualizer/tilt_angle", 1000);
         bdrPub = nh.advertise<std_msgs::Float64>("/visualizer/body_rate", 1000);
+        corridorPub = nh.advertise<visualization_msgs::MarkerArray>("/visualizer/corridors", 1000);
+        initialGuessPub = nh.advertise<visualization_msgs::MarkerArray>("/visualizer/initial_waypt", 1000);
     }
 
     // Visualize the trajectory and its front-end path
@@ -159,6 +166,89 @@ public:
             }
             trajectoryPub.publish(trajMarker);
         }
+    }
+
+    inline void visualizeCorridors(const std::vector<CorridorGen::Corridor> &corridor_list)
+    {
+        std::random_device dev;
+        std::mt19937 generator(dev());
+        std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+        visualization_msgs::MarkerArray corridors_array;
+        corridors_array.markers.reserve(corridor_list.size());
+        int index = 0;
+        for (auto corridor : corridor_list)
+        {
+            auto [position, radius] = corridor;
+            visualization_msgs::Marker corridor_sphere;
+            corridor_sphere.header.frame_id = "odom";
+            corridor_sphere.header.stamp = ros::Time::now();
+            corridor_sphere.id = index;
+            corridor_sphere.type = visualization_msgs::Marker::SPHERE;
+            corridor_sphere.action = visualization_msgs::Marker::ADD;
+            corridor_sphere.pose.position.x = position.x();
+            corridor_sphere.pose.position.y = position.y();
+            corridor_sphere.pose.position.z = position.z();
+            corridor_sphere.pose.orientation.x = 0.0;
+            corridor_sphere.pose.orientation.y = 0.0;
+            corridor_sphere.pose.orientation.z = 0.0;
+            corridor_sphere.pose.orientation.w = 1.0;
+            corridor_sphere.scale.x = radius * 2;
+            corridor_sphere.scale.y = radius * 2;
+            corridor_sphere.scale.z = radius * 2;
+            corridor_sphere.color.a = 0.2; // Don't forget to set the alpha!
+            corridor_sphere.color.r = dis(generator);
+            corridor_sphere.color.g = dis(generator);
+            corridor_sphere.color.b = dis(generator);
+
+            corridors_array.markers.emplace_back(corridor_sphere);
+
+            // std::cout << "position is: " << position.transpose() << " radius is: " << radius << std::endl;
+            index++;
+        }
+
+        // std::cout << "corridor marker array size is: " << corridors_array.markers.size() << std::endl;
+
+        corridorPub.publish(corridors_array);
+    }
+
+    inline void visualizeInitialGuess(const std::vector<Eigen::Vector3d> &path_list)
+    {
+        // std::cout << "publishing path" << std::endl;
+        visualization_msgs::MarkerArray initial_guess;
+        int array_size = path_list.size();
+        initial_guess.markers.clear();
+        // astar_nodes.markers.resize(array_size);
+        // path_list.clear();
+        // path_list.emplace_back(current_pos);
+        // path_list.emplace_back(target_pos);
+
+        for (int i = 0; i < array_size; i++)
+        {
+            visualization_msgs::Marker node;
+            node.header.frame_id = "odom";
+            node.header.stamp = ros::Time::now();
+            node.id = i;
+            node.type = visualization_msgs::Marker::SPHERE;
+            node.action = visualization_msgs::Marker::ADD;
+            node.pose.position.x = path_list[i].x();
+            node.pose.position.y = path_list[i].y();
+            node.pose.position.z = path_list[i].z();
+            node.pose.orientation.x = 0.0;
+            node.pose.orientation.y = 0.0;
+            node.pose.orientation.z = 0.0;
+            node.pose.orientation.w = 1.0;
+            node.scale.x = 0.5;
+            node.scale.y = 0.5;
+            node.scale.z = 0.5;
+            node.color.a = 1.0; // Don't forget to set the alpha!
+            node.color.r = 0.0;
+            node.color.g = 1.0;
+            node.color.b = 0.0;
+
+            initial_guess.markers.emplace_back(node);
+        }
+        initialGuessPub.publish(initial_guess);
     }
 
     // Visualize some polytopes in H-representation
