@@ -351,7 +351,7 @@ namespace minco
             gradByPoints.resize(3, N - 1);
             gradByTimes.resize(N);
             Eigen::MatrixX3d adjGrad = partialGradByCoeffs;
-            A.solveAdj(adjGrad);
+            A.solveAdj(adjGrad); // 
 
             for (int i = 0; i < N - 1; i++)
             {
@@ -393,7 +393,7 @@ namespace minco
         }
     };
 
-    // MINCO for s=3 and non-uniform time
+    // MINCO for s=3 and non-uniform time i.e. minimum jerk
     class MINCO_S3NU
     {
     public:
@@ -433,11 +433,17 @@ namespace minco
         inline void setParameters(const Eigen::Matrix3Xd &inPs,
                                   const Eigen::VectorXd &ts)
         {
+            // std::cout << "inPs:\n";
+            // std::cout << inPs << std::endl;
+
+            // std::cout << "ts:\n";
+            // std::cout << ts.transpose() << std::endl;
+
             T1 = ts;
-            T2 = T1.cwiseProduct(T1);
-            T3 = T2.cwiseProduct(T1);
-            T4 = T2.cwiseProduct(T2);
-            T5 = T4.cwiseProduct(T1);
+            T2 = T1.cwiseProduct(T1); // ts^2
+            T3 = T2.cwiseProduct(T1); // ts^3
+            T4 = T2.cwiseProduct(T2); // ts^4
+            T5 = T4.cwiseProduct(T1); // ts^5
 
             A.reset();
             b.setZero();
@@ -509,6 +515,9 @@ namespace minco
             A.factorizeLU();
             A.solve(b);
 
+            // std::cout << "matrix A is " << A << std::endl;
+            // std::cout << "vector b is " << b << std::endl;
+
             return;
         }
 
@@ -526,7 +535,8 @@ namespace minco
             }
             return;
         }
-
+        // eq3-102 of Zhepei's thesis Tr{b_i.transpose() * Q(T_i) * b_i}
+        // minimum jerk trajectory, s = 3
         inline void getEnergy(double &energy) const
         {
             energy = 0.0;
@@ -546,10 +556,10 @@ namespace minco
         {
             return b;
         }
-
+        // dJ/dc
         inline void getEnergyPartialGradByCoeffs(Eigen::MatrixX3d &gdC) const
         {
-            gdC.resize(6 * N, 3);
+            gdC.resize(6 * N, 3); // every segment there are 6 coefficients, for 3 axis
             for (int i = 0; i < N; i++)
             {
                 gdC.row(6 * i + 5) = 240.0 * b.row(6 * i + 3) * T3(i) +
@@ -565,7 +575,7 @@ namespace minco
             }
             return;
         }
-
+        // dJ/dt
         inline void getEnergyPartialGradByTimes(Eigen::VectorXd &gdT) const
         {
             gdT.resize(N);
@@ -587,7 +597,7 @@ namespace minco
                                   Eigen::VectorXd &gradByTimes)
 
         {
-            gradByPoints.resize(3, N - 1);
+            gradByPoints.resize(3, N - 1); // N is piece number
             gradByTimes.resize(N);
             Eigen::MatrixX3d adjGrad = partialGradByCoeffs;
             A.solveAdj(adjGrad);
