@@ -1,6 +1,6 @@
 #include "misc/visualizer.hpp"
 #include "gcopter/trajectory.hpp"
-#include "gcopter/gcopter.hpp"
+#include "gcopter/gcopter_bubble.hpp"
 #include "gcopter/firi.hpp"
 #include "gcopter/flatness.hpp"
 #include "gcopter/voxel_map.hpp"
@@ -189,6 +189,9 @@ public:
             visualizer.visualizeCorridors(corridor_list);
             visualizer.visualizeInitialGuess(initial_guess);
 
+            std::cout << "number of corridors: " << corridor_list.size() << std::endl;
+            std::cout << "number of waypoints: " << initial_guess.size() << std::endl;
+
             std::for_each(corridor_list.begin(), corridor_list.end(),
                         [](auto& corridor)
                         {
@@ -196,14 +199,14 @@ public:
                             std::cout << "center: " << center.transpose() << " radius: " << radius << std::endl;
                         });
 
-            sfc_gen::convexCover(route,
-                                 pc,
-                                 voxelMap.getOrigin(),
-                                 voxelMap.getCorner(),
-                                 7.0,
-                                 3.0,
-                                 hPolys);
-            sfc_gen::shortCut(hPolys);
+            // sfc_gen::convexCover(route,
+            //                      pc,
+            //                      voxelMap.getOrigin(),
+            //                      voxelMap.getCorner(),
+            //                      7.0,
+            //                      3.0,
+            //                      hPolys);
+            // sfc_gen::shortCut(hPolys);
 
             if (route.size() > 1)
             {
@@ -214,7 +217,7 @@ public:
                 iniState << route.front(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
                 finState << route.back(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
 
-                gcopter::GCOPTER_PolytopeSFC gcopter;
+                gcopter_bubble::GCOPTER_SphericalSFC gcopter_bubble;
 
                 // magnitudeBounds = [v_max, omg_max, theta_max, thrust_min, thrust_max]^T
                 // penaltyWeights = [pos_weight, vel_weight, omg_weight, theta_weight, thrust_weight]^T
@@ -244,11 +247,12 @@ public:
 
                 traj.clear();
 
-                if (!gcopter.setup(config.weightT,
+                if (!gcopter_bubble.setup(false, config.weightT,
                                    iniState, finState,
-                                   hPolys, INFINITY,
+                                   INFINITY,
                                    config.smoothingEps,
                                    quadratureRes,
+                                   initial_guess,
                                    magnitudeBounds,
                                    penaltyWeights,
                                    physicalParams))
@@ -256,7 +260,7 @@ public:
                     return;
                 }
 
-                if (std::isinf(gcopter.optimize(traj, config.relCostTol)))
+                if (std::isinf(gcopter_bubble.optimize(traj, config.relCostTol)))
                 {
                     return;
                 }

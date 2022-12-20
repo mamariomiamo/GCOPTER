@@ -133,7 +133,7 @@ Visualization Manager:
       Marker Topic: /visualizer/route
       Name: route
       Namespaces:
-        route: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -141,7 +141,7 @@ Visualization Manager:
       Marker Topic: /visualizer/mesh
       Name: polyMesh
       Namespaces:
-        mesh: true
+        {}
       Queue Size: 100
       Value: false
     - Class: rviz/Marker
@@ -149,18 +149,17 @@ Visualization Manager:
       Marker Topic: /visualizer/edge
       Name: polyEdges
       Namespaces:
-        edge: true
+        {}
       Queue Size: 100
       Value: false
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /visualizer/spheres
       Name: sphere
       Namespaces:
-        StartGoal: true
-        spheres: true
+        {}
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /visualizer/trajectory
@@ -182,7 +181,7 @@ Visualization Manager:
       Marker Topic: /visualizer/initial_waypt
       Name: initialWaypt
       Namespaces:
-        trajectory: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true

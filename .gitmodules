@@ -1,0 +1,3 @@
+[submodule "gcopter/include/corridor_gen"]
+	path = gcopter/include/corridor_gen
+	url = git@github.com:mamariomiamo/corridor_gen.git
